@@ -1,190 +1,296 @@
+from pathlib import Path
 import pandas as pd
 import streamlit as st
 
 st.set_page_config(
-    page_title="Cuba, NM — Telecom & KNeW Resource Recovery Dashboard",
+    page_title="Cuba, NM — Telecommunications Dashboard",
     page_icon="📡",
     layout="wide",
 )
 
 # -----------------------------------------------------------------------------
-# DATA FROM PROVIDED DOCUMENTS
+# TELECOMMUNICATIONS, CELLULAR & POWER RELIABILITY DATA (CUBA, NM)
 # -----------------------------------------------------------------------------
-PROVIDER_DATA = pd.DataFrame(
+INTERNET_PROVIDERS = pd.DataFrame(
     [
-        {"Provider": "Starlink / Viasat", "Category": "Satellite", "Availability (%)": 100.0},
-        {"Provider": "Higher Speed Internet", "Category": "Fixed Wireless", "Availability (%)": 87.4},
-        {"Provider": "EarthLink", "Category": "5G Home", "Availability (%)": 86.1},
-        {"Provider": "Choice Broadband", "Category": "Fixed Wireless", "Availability (%)": 82.8},
-        {"Provider": "Windstream / Kinetic", "Category": "Fiber & DSL", "Availability (%)": 61.0},
-        {"Provider": "Ethos Broadband", "Category": "Fixed Wireless", "Availability (%)": 46.1},
-        {"Provider": "T-Mobile Home Internet", "Category": "5G FWA", "Availability (%)": 38.7},
-        {"Provider": "Verizon 5G Home", "Category": "5G FWA", "Availability (%)": 4.3},
+        {
+            "Provider": "Starlink",
+            "Connection": "Satellite",
+            "Availability (%)": 100.0,
+            "Max Speed (Mbps)": 400,
+            "Terrestrial": "No",
+            "Notes": "Broad community coverage; non-terrestrial.",
+        },
+        {
+            "Provider": "Viasat",
+            "Connection": "Satellite",
+            "Availability (%)": 100.0,
+            "Max Speed (Mbps)": 150,
+            "Terrestrial": "No",
+            "Notes": "Broad community coverage; non-terrestrial.",
+        },
+        {
+            "Provider": "Hughesnet",
+            "Connection": "Satellite",
+            "Availability (%)": 97.4,
+            "Max Speed (Mbps)": 50,
+            "Terrestrial": "No",
+            "Notes": "Broad community coverage; non-terrestrial.",
+        },
+        {
+            "Provider": "Higher-Speed Internet",
+            "Connection": "Fixed Wireless",
+            "Availability (%)": 62.8,
+            "Max Speed (Mbps)": 10,
+            "Terrestrial": "Yes",
+            "Notes": "Largest cited terrestrial footprint, but low maximum speed.",
+        },
+        {
+            "Provider": "Choice Broadband",
+            "Connection": "Fixed Wireless",
+            "Availability (%)": 55.8,
+            "Max Speed (Mbps)": 200,
+            "Terrestrial": "Yes",
+            "Notes": "Meaningful Cuba footprint with higher cited maximum speed.",
+        },
+        {
+            "Provider": "Kinetic",
+            "Connection": "DSL",
+            "Availability (%)": 41.2,
+            "Max Speed (Mbps)": 300,
+            "Terrestrial": "Yes",
+            "Notes": "Wired/DSL option with partial Cuba availability.",
+        },
+        {
+            "Provider": "T-Mobile 5G Home Internet",
+            "Connection": "5G Home Internet",
+            "Availability (%)": 23.5,
+            "Max Speed (Mbps)": 498,
+            "Terrestrial": "Yes",
+            "Notes": "High potential speed but limited cited Cuba footprint.",
+        },
+        {
+            "Provider": "Mint Mobile 5G Internet",
+            "Connection": "5G Internet",
+            "Availability (%)": 23.2,
+            "Max Speed (Mbps)": 415,
+            "Terrestrial": "Yes",
+            "Notes": "5G-based service with limited cited footprint.",
+        },
+        {
+            "Provider": "XNET WiFi",
+            "Connection": "Fixed Wireless",
+            "Availability (%)": 15.4,
+            "Max Speed (Mbps)": 2000,
+            "Terrestrial": "Yes",
+            "Notes": "Highest cited maximum speed, but small Cuba footprint.",
+        },
+        {
+            "Provider": "Verizon 5G Home Internet",
+            "Connection": "5G Home Internet",
+            "Availability (%)": 8.5,
+            "Max Speed (Mbps)": 300,
+            "Terrestrial": "Yes",
+            "Notes": "Small cited Cuba home-internet footprint.",
+        },
     ]
 )
 
-TELECOM_CHALLENGES = {
+CELLULAR_COVERAGE = pd.DataFrame(
+    [
+        {
+            "Carrier": "AT&T",
+            "4G Coverage (%)": 100,
+            "5G Coverage (%)": 0,
+            "Summary": "Broad modeled 4G footprint; no 5G footprint in cited Cuba dataset.",
+        },
+        {
+            "Carrier": "Verizon",
+            "4G Coverage (%)": 100,
+            "5G Coverage (%)": 0,
+            "Summary": "Broad modeled 4G footprint; no 5G footprint in cited Cuba dataset.",
+        },
+        {
+            "Carrier": "T-Mobile",
+            "4G Coverage (%)": 97,
+            "5G Coverage (%)": 94,
+            "Summary": "Broad 4G plus strongest cited 5G footprint (94%) in Cuba.",
+        },
+    ]
+)
+
+JMEC_RELIABILITY = pd.DataFrame(
+    [
+        {
+            "Year": 2020,
+            "SAIDI Incl. Major Events (min/cust)": 540.9,
+            "SAIDI Excl. Major Events (min/cust)": 486.0,
+            "SAIFI": 2.785,
+            "Approx. Outage Hours / Cust": 9.02,
+        },
+        {
+            "Year": 2021,
+            "SAIDI Incl. Major Events (min/cust)": 777.6,
+            "SAIDI Excl. Major Events (min/cust)": 432.9,
+            "SAIFI": 4.166,
+            "Approx. Outage Hours / Cust": 12.96,
+        },
+        {
+            "Year": 2022,
+            "SAIDI Incl. Major Events (min/cust)": 605.5,
+            "SAIDI Excl. Major Events (min/cust)": 569.8,
+            "SAIFI": 2.929,
+            "Approx. Outage Hours / Cust": 10.09,
+        },
+        {
+            "Year": 2023,
+            "SAIDI Incl. Major Events (min/cust)": 668.1,
+            "SAIDI Excl. Major Events (min/cust)": 641.3,
+            "SAIFI": 3.430,
+            "Approx. Outage Hours / Cust": 11.14,
+        },
+        {
+            "Year": 2024,
+            "SAIDI Incl. Major Events (min/cust)": 1876.7,
+            "SAIDI Excl. Major Events (min/cust)": 1044.8,
+            "SAIFI": 4.950,
+            "Approx. Outage Hours / Cust": 31.28,
+        },
+    ]
+)
+
+FACTOR_DETAILS = {
     "Poor Electrical": (
-        "Cuba is especially prone to electrical issues and temporary power outages compared to "
+        "Cuba is particularly prone to electrical issues and temporary power outages compared to "
         "other areas in New Mexico, directly interrupting cellular and computer communications "
-        "even where cell towers and laptops are present."
+        "even where cell towers and devices exist. Utility-wide JMEC SAIDI reached 1,876.7 minutes "
+        "per customer in 2024."
     ),
     "Seasonal Monsoons / Weather": (
-        "Monsoons and rapidly changing weather disrupt satellite-based connections (causing service "
-        "degradation or outages) and slowly degrade terrain, triggering downstream maintenance and "
-        "access issues."
+        "Seasonal monsoons and rapidly changing weather disrupt satellite-based links (causing "
+        "degraded service or complete failures) and slowly degrade terrain, creating downstream "
+        "maintenance and access challenges."
     ),
     "Poor Work Terrain / Maintenance / Roaming Livestock": (
-        "Rocky/difficult terrain and roaming livestock (which can chew cables or get loose) slow down "
-        "crew access, material transport, and routine maintenance required to keep towers and systems running."
+        "Difficult terrain and roaming livestock (which can chew cables or get loose) slow down "
+        "crew access, material transport, and routine maintenance needed to keep towers and "
+        "telecom equipment operating reliably."
     ),
     "Poor Economy": (
-        "Creates a feedback loop: limited local funds constrain road/terrain repairs and tower "
-        "maintenance, while infrastructure/connectivity gaps hinder economic growth."
+        "Creates a reinforcing feedback loop: limited local funds constrain road/terrain repairs "
+        "and tower maintenance, while connectivity and infrastructure constraints limit local "
+        "economic activity."
     ),
 }
-
-BYPRODUCT_DATA = pd.DataFrame(
-    [
-        {"Product": "Potassium Nitrate (KNO3)", "Use / Type": "Fertilizer", "Annual Yield (metric tons/yr)": 13023},
-        {"Product": "Sodium Nitrate (NaNO3)", "Use / Type": "Chile Saltpeter / Preservative", "Annual Yield (metric tons/yr)": 10766},
-        {"Product": "Sodium Chloride (NaCl)", "Use / Type": "Salt / Road De-icing Goodwill", "Annual Yield (metric tons/yr)": 7422},
-        {"Product": "Calcium Chloride (CaCl2)", "Use / Type": "Food Additive", "Annual Yield (metric tons/yr)": 4294},
-        {"Product": "Ammonium Sulfate ((NH4)2SO4)", "Use / Type": "Fertilizer", "Annual Yield (metric tons/yr)": 1981},
-        {"Product": "Dolomite (CaMg(CO3)2)", "Use / Type": "Additive / Materials", "Annual Yield (metric tons/yr)": 166},
-    ]
-)
-
-FEED_CHEMISTRY = pd.DataFrame(
-    [
-        {"Constituent": "Na", "Concentration (mg/L)": 3417, "Equiv/L": 148.6},
-        {"Constituent": "K", "Concentration (mg/L)": 0, "Equiv/L": 0.0},
-        {"Constituent": "Ca", "Concentration (mg/L)": 450, "Equiv/L": 22.5},
-        {"Constituent": "Mg", "Concentration (mg/L)": 30, "Equiv/L": 2.5},
-        {"Constituent": "Bicarbonate", "Concentration (mg/L)": 1340, "Equiv/L": 22.0},
-        {"Constituent": "Sulfate", "Concentration (mg/L)": 2033, "Equiv/L": 42.4},
-        {"Constituent": "Cl", "Concentration (mg/L)": 3876, "Equiv/L": 109.2},
-    ]
-)
-
-MILESTONE_RANGES = pd.DataFrame(
-    [
-        {"Phase": "Permitting", "Target Month (Summary)": "Month 5", "Timeline Range (Gantt)": "5–8 months"},
-        {"Phase": "Shovel Ready", "Target Month (Summary)": "Month 11 (within 12 mos)", "Timeline Range (Gantt)": "11–19 months"},
-        {"Phase": "Commissioning / Operations", "Target Month (Summary)": "Month 22 (23 mos target)", "Timeline Range (Gantt)": "22–34 months"},
-    ]
-)
 
 # -----------------------------------------------------------------------------
 # HEADER & TOP KPIs
 # -----------------------------------------------------------------------------
-st.title("Village of Cuba, NM — Telecom & Resource Recovery Dashboard")
-st.caption("Interactive overview compiled from Group 13 ECE-220 / Cuba NM project files.")
+st.title("Village of Cuba, NM — Telecommunications Dashboard")
+st.caption("Broadband availability, cellular coverage, power reliability context, and systemic telecom factors.")
 
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-kpi1.metric("Registered Students (2023)", "769")
-kpi2.metric("Graduation Rate Shift", "62% → 95%", "+33 pts (2019–2021)")
-kpi3.metric("KNeW Water Supply", "528,944 gpd", "vs. 420,000 gpd existing")
-kpi4.metric("Total Annual Byproducts", f"{BYPRODUCT_DATA['Annual Yield (metric tons/yr)'].sum():,} t/yr")
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Registered Students (2023)", "769")
+k2.metric("Graduation Rate Shift", "62% → 95%", "+33 pts (2019–2021)")
+k3.metric("Top Satellite Footprint", "100%", "Starlink & Viasat")
+k4.metric("JMEC 2024 SAIDI", "1,876.7 min", "vs. 540.9 min in 2020")
 
 st.divider()
 
 # -----------------------------------------------------------------------------
-# TABS
+# SECTION 1: INTERNET PROVIDER AVAILABILITY
 # -----------------------------------------------------------------------------
-tab1, tab2 = st.tabs(["📡 Telecommunications & Broadband", "💧 KNeW Resource Recovery Facility"])
+st.header("1. Internet Provider Availability & Speeds")
 
-# --- TAB 1: TELECOM ---
-with tab1:
-    st.header("Broadband & Telecom Availability")
+col_ctrl, col_viz = st.columns([1, 1.8])
+with col_ctrl:
+    conn_types = sorted(INTERNET_PROVIDERS["Connection"].unique())
+    selected_conn = st.multiselect("Filter by Connection Type", conn_types, default=conn_types)
+    terrestrial_only = st.checkbox("Terrestrial providers only", value=False)
+    min_avail = st.slider("Minimum Availability (%)", 0.0, 100.0, 0.0, step=5.0)
 
-    col_filter, col_chart = st.columns([1, 2])
-    with col_filter:
-        categories = sorted(PROVIDER_DATA["Category"].unique())
-        selected_categories = st.multiselect(
-            "Filter by Technology Category",
-            options=categories,
-            default=categories,
-        )
-        min_avail = st.slider("Minimum Geographic Availability (%)", 0.0, 100.0, 0.0, step=5.0)
+    filtered_isp = INTERNET_PROVIDERS[
+        (INTERNET_PROVIDERS["Connection"].isin(selected_conn))
+        & (INTERNET_PROVIDERS["Availability (%)"] >= min_avail)
+    ]
+    if terrestrial_only:
+        filtered_isp = filtered_isp[filtered_isp["Terrestrial"] == "Yes"]
 
-        filtered_providers = PROVIDER_DATA[
-            (PROVIDER_DATA["Category"].isin(selected_categories))
-            & (PROVIDER_DATA["Availability (%)"] >= min_avail)
-        ].sort_values("Availability (%)", ascending=True)
-
-        st.dataframe(
-            filtered_providers.sort_values("Availability (%)", ascending=False),
-            use_container_width=True,
-            hide_index=True,
-        )
-
-    with col_chart:
-        st.subheader("Geographic Availability (%) by Provider")
-        if filtered_providers.empty:
-            st.warning("No providers match the current filter settings.")
-        else:
-            st.bar_chart(
-                filtered_providers.set_index("Provider")["Availability (%)"],
-                horizontal=True,
-                height=340,
-            )
-
-    st.markdown("### Key Connectivity Takeaways")
-    t1, t2, t3, t4 = st.columns(4)
-    t1.info("**Satellite (100%)**\n\nStarlink & Viasat reach all homes across spread-out, rocky terrain; teacher-led satellite installation helped expand student access.")
-    t2.info("**Fixed Wireless / 5G (~39%–87%)**\n\nLocal WISPs and 5G home options cover much of the area via nearby mesas, though cell tower capacity for home broadband is limited.")
-    t3.info("**Wireline / Fiber (61%)**\n\nWindstream/Kinetic coverage largely tracks corridors like US-550 and NM-126.")
-    t4.info("**Verizon 5G Home (4.3%)**\n\nVery limited footprint compared to satellite and local fixed wireless.")
-
-    st.markdown("### FCC Location Map Speed Tiers (≥ 100/20 Mbps Reference)")
-    st.markdown(
-        "- **Green (Served):** At least one terrestrial ISP filed that it can install **≥ 100/20 Mbps** service within 10 business days.\n"
-        "- **Yellow (Underserved):** Service exists at the address, but top speeds fall below **100/20 Mbps** (commonly DSL around 10/1 to 50/10 Mbps).\n"
-        "- **Red (Unserved):** No ground-based wireline or terrestrial wireless provider claims even basic **25/3 Mbps** broadband."
-    )
-
-    st.markdown("### Interconnected Telecommunications Challenges")
-    selected_challenge = st.selectbox("Select a factor to inspect its role:", list(TELECOM_CHALLENGES.keys()))
-    st.write(TELECOM_CHALLENGES[selected_challenge])
-
-# --- TAB 2: KNEW FACILITY ---
-with tab2:
-    st.header("The KNeW Company — Resource Recovery & Water Project")
-
-    w1, w2, w3 = st.columns(3)
-    w1.metric("Existing Municipal Demand", "420,000 gpd")
-    w2.metric("Proposed KNeW Supply", "528,944 gpd", "+108,944 gpd extra capacity")
-    w3.metric("Rio Puerco Aquifer Depth", "2,700 ft", "576k–2.6M acre-feet recoverable")
-
-    st.markdown(
-        "The project uses the KNeW / ZIX-Zag ion-exchange and crystallization/precipitation process "
-        "(with EPC execution by **Black & Veatch** and fertilizer/water off-take interest including **Yara** "
-        "and **Village of Cuba**) to produce demineralized/potable-grade water and mineral/fertilizer byproducts "
-        "with minimal waste[cite: 6, 7, 8, 9, 10, 11, 12, 13]."
-    )
-
-    c_left, c_right = st.columns([1.4, 1])
-    with c_left:
-        st.subheader("Projected Annual Byproduct Output (Metric Tons / Year)")
+with col_viz:
+    if filtered_isp.empty:
+        st.warning("No providers match the selected filters.")
+    else:
+        st.subheader("Estimated Availability (%) in Cuba, NM")
         st.bar_chart(
-            BYPRODUCT_DATA.sort_values("Annual Yield (metric tons/yr)", ascending=True).set_index("Product")[
-                "Annual Yield (metric tons/yr)"
-            ],
+            filtered_isp.sort_values("Availability (%)", ascending=True).set_index("Provider")["Availability (%)"],
             horizontal=True,
-            height=300,
+            height=340,
         )
-    with c_right:
-        st.subheader("Byproduct Breakdown")
-        st.dataframe(BYPRODUCT_DATA, use_container_width=True, hide_index=True)
 
-    st.subheader("Feedwater Composition (Mass Balance Reference)")
-    st.dataframe(FEED_CHEMISTRY, use_container_width=True, hide_index=True)
-    st.caption("Facility design flow noted across diligence materials: at least 516k gpd / 0.52 MGD (186M–186.48M gal/yr)[cite: 7, 8, 13].")
+st.dataframe(filtered_isp.sort_values("Availability (%)", ascending=False), use_container_width=True, hide_index=True)
 
-    st.subheader("Mobilization & Project Schedule")
-    st.dataframe(MILESTONE_RANGES, use_container_width=True, hide_index=True)
+st.markdown("**FCC Location Map Tiers (≥ 100/20 Mbps Reference):**")
+st.markdown(
+    "- **Green (Served):** Terrestrial ISP filed ability to install **≥ 100/20 Mbps** within 10 business days.\n"
+    "- **Yellow (Underserved):** Service exists, but top speeds fall below **100/20 Mbps** (commonly DSL ~10/1 to 50/10 Mbps).\n"
+    "- **Red (Unserved):** No ground-based wireline or terrestrial wireless carrier claims even basic **25/3 Mbps** service."
+)
+
+st.divider()
+
+# -----------------------------------------------------------------------------
+# SECTION 2: CELLULAR COVERAGE & POWER RELIABILITY CONTEXT
+# -----------------------------------------------------------------------------
+st.header("2. Mobile Cellular Coverage & Power Reliability Context")
+
+c_cell, c_pwr = st.columns(2)
+
+with c_cell:
+    st.subheader("Modeled 4G & 5G Coverage by Carrier (%)")
+    st.dataframe(CELLULAR_COVERAGE, use_container_width=True, hide_index=True)
+    st.bar_chart(CELLULAR_COVERAGE.set_index("Carrier")[["4G Coverage (%)", "5G Coverage (%)"]], height=260)
+
+with c_pwr:
+    st.subheader("JMEC Systemwide Reliability Trend (SAIDI / SAIFI)")
+    st.dataframe(JMEC_RELIABILITY, use_container_width=True, hide_index=True)
+    st.line_chart(
+        JMEC_RELIABILITY.set_index("Year")[
+            ["SAIDI Incl. Major Events (min/cust)", "SAIDI Excl. Major Events (min/cust)"]
+        ],
+        height=260,
+    )
+    st.caption("Utility-wide JMEC EIA-861 reliability context supporting power-resilience risk analysis for telecom equipment.")
+
+st.divider()
+
+# -----------------------------------------------------------------------------
+# SECTION 3: TELECOMMUNICATIONS INTERCONNECTION FLOWCHART (ENG220_Story_JB)
+# -----------------------------------------------------------------------------
+st.header("3. Interconnected Telecommunications Factors (Flowchart)")
+
+img_path = Path("flowchart_page1_X6.png")
+col_img, col_exp = st.columns([1.4, 1])
+
+with col_img:
+    if img_path.exists():
+        st.image(
+            str(img_path),
+            caption="Telecommunications factor relationship diagram (from ENG220_Story_JB-2.pdf)",
+            use_container_width=True,
+        )
+    else:
+        st.warning(
+            "Flowchart image file `flowchart_page1_X6.png` not found in the working directory. "
+            "Extract it from `ENG220_Story_JB-2.pdf` and place it alongside `app.py`."
+        )
+
+with col_exp:
+    st.subheader("Factor Breakdown")
+    selected_factor = st.selectbox("Select a factor:", list(FACTOR_DETAILS.keys()))
+    st.info(FACTOR_DETAILS[selected_factor])
+
+    st.markdown("**Educational Connectivity Context:**")
     st.markdown(
-        "**Key Permitting & Execution Highlights:** 23 permitting requirements tracked across state/federal/local "
-        "agencies (e.g., Construction General Permit NMR100000 at 7 days from eNOI, while several permits take ~30 days to 3–6+ months)[cite: 14]."
+        "- Lightly populated rural & tribal land setting (~769 registered students in 2023) created severe remote-learning barriers during COVID-19.\n"
+        "- Locally installed satellite units (with teacher installation) helped expand student connectivity, contributing to graduation rates rising from **62% (2019)** to **95% (2021)**."
     )
