@@ -1,11 +1,18 @@
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="Cuba, NM — Telecommunications Dashboard",
     page_icon="📡",
     layout="wide",
+)
+
+FCC_MAP_URL = (
+    "https://broadbandmap.fcc.gov/location-summary/fixed?"
+    "version=dec2025&zoom=15.26&vlon=-106.956261&vlat=36.017635"
+    "&br=r&speed=100_20&tech=1_2_3_7"
 )
 
 # -----------------------------------------------------------------------------
@@ -229,6 +236,34 @@ with col_viz:
 
 st.dataframe(filtered_isp.sort_values("Availability (%)", ascending=False), use_container_width=True, hide_index=True)
 
+st.divider()
+
+# -----------------------------------------------------------------------------
+# SECTION 2: FCC NATIONAL BROADBAND MAP (CUBA, NM)
+# -----------------------------------------------------------------------------
+st.header("2. FCC Broadband Map — Cuba, NM (≥ 100/20 Mbps)")
+st.link_button("Open Interactive FCC Broadband Map in New Tab", FCC_MAP_URL)
+
+map_tab1, map_tab2 = st.tabs(["Embedded FCC Map", "FCC Map Snapshot (PDF)"])
+
+with map_tab1:
+    components.iframe(FCC_MAP_URL, height=520, scrolling=True)
+    st.caption(
+        "If the embedded FCC frame appears blank due to browser or site frame restrictions, "
+        "use the button above to open the map directly or view the PDF map snapshot tab."
+    )
+
+with map_tab2:
+    fcc_img_path = Path("fcc_map_page2_X14.png")
+    if fcc_img_path.exists():
+        st.image(
+            str(fcc_img_path),
+            caption="FCC Broadband Map view for Cuba, NM (from CUBA VILLAGE DATA-1-1.pdf)",
+            use_container_width=True,
+        )
+    else:
+        st.info("Place `fcc_map_page2_X14.png` alongside `app.py` to display the static FCC map snapshot.")
+
 st.markdown("**FCC Location Map Tiers (≥ 100/20 Mbps Reference):**")
 st.markdown(
     "- **Green (Served):** Terrestrial ISP filed ability to install **≥ 100/20 Mbps** within 10 business days.\n"
@@ -239,9 +274,9 @@ st.markdown(
 st.divider()
 
 # -----------------------------------------------------------------------------
-# SECTION 2: CELLULAR COVERAGE & POWER RELIABILITY CONTEXT
+# SECTION 3: CELLULAR COVERAGE & POWER RELIABILITY CONTEXT
 # -----------------------------------------------------------------------------
-st.header("2. Mobile Cellular Coverage & Power Reliability Context")
+st.header("3. Mobile Cellular Coverage & Power Reliability Context")
 
 c_cell, c_pwr = st.columns(2)
 
@@ -264,9 +299,9 @@ with c_pwr:
 st.divider()
 
 # -----------------------------------------------------------------------------
-# SECTION 3: TELECOMMUNICATIONS INTERCONNECTION FLOWCHART (ENG220_Story_JB)
+# SECTION 4: TELECOMMUNICATIONS INTERCONNECTION FLOWCHART (ENG220_Story_JB)
 # -----------------------------------------------------------------------------
-st.header("3. Interconnected Telecommunications Factors (Flowchart)")
+st.header("4. Interconnected Telecommunications Factors (Flowchart)")
 
 img_path = Path("flowchart_page1_X6.png")
 col_img, col_exp = st.columns([1.4, 1])
